@@ -1,44 +1,49 @@
 import './css/styles.css';
 import debounce from 'lodash.debounce';
 import fetchCountries from './fetchCountries'
-import Notiflix from 'notiflix';
 
 const DEBOUNCE_DELAY = 300;
 const refs = {
     input: document.querySelector('#search-box'),
-    text: document.querySelector('.country-list')
+    text: document.querySelector('.country-list'),
+    info: document.querySelector('.country-info')
 }
 
-refs.input.addEventListener('input', debounce(buildMarkup,DEBOUNCE_DELAY))
+refs.input.addEventListener('input', debounce(onInputChange,DEBOUNCE_DELAY))
 
 
-function buildMarkup(e) {
-    if (e.target.value === '') {
+function onInputChange(e) {
+    const name = e.target.value.toLowerCase().trim()
+    if (name === '') {
         destroyMarkup()
         return
     }
-    const name = e.target.value.toLowerCase().trim()
     fetchCountries(name).then(countries => {
-        if (countries.length > 10) {
-            Notiflix.Notify.info("Too many matches found. Please enter a more specific name.")
-            return 
-        }
-        const fullLineMarkUp = countries.map(country =>{
-            if (countries.length < 2) {
-                return createBigMarkUp(country)
-            }
-            return createLineMarkUp(country)
-        }).join('')
-        refs.text.innerHTML = fullLineMarkUp;
+        buildMarkUp(countries) 
+    }).catch(() =>{
+        destroyMarkup()
     })
-    .catch(error => {
-        destroyMarkup
-        Notiflix.Notify.failure('Oops, there is no country with that name')
-    }) 
+}
+
+function buildMarkUp(countries) {
+    const bigMarkup = countries.map(country => {
+        return createBigMarkUp(country)
+    }).join('')
+    const lineMarkup = countries.map(country => {
+        return createLineMarkUp(country)
+    }).join('')
+    if (countries.length < 2) {
+        refs.info.innerHTML = bigMarkup
+        refs.text.innerHTML = ''   
+    }else{
+        refs.text.innerHTML = lineMarkup
+        refs.info.innerHTML = ''
+    }
 }
 
 function destroyMarkup(){
     refs.text.innerHTML = ''
+    refs.info.innerHTML = ''
 }
 
 function createLineMarkUp({flags, name}) {
